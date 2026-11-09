@@ -32,7 +32,10 @@ class TestZarrFITSStore(StoreTests):
         return await self.backing.get(key, prototype=default_buffer_prototype())
 
     def test_store_repr(self, store):
-        assert repr(store) == f"ZarrFITSStore(LocalStore('file://{self.backing.root.as_posix()}'))"
+        assert (
+            repr(store)
+            == f"ZarrFITSStore(LocalStore('file://{self.backing.root.as_posix()}'))"
+        )
 
     def test_store_supports_writes(self, store):
         assert store.supports_writes
