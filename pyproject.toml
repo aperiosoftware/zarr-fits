@@ -23,7 +23,7 @@ source = "vcs"
 version-file = "zarr_fits/_version.py"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-asyncio"]
+test = ["pytest", "pytest-asyncio", "reproject"]
 docs = ["sphinx", "myst-parser", "furo"]
 
 [tool.hatch.build.targets.wheel]
