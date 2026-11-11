@@ -1,6 +1,22 @@
-on: pull_request
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: { id-token: write, contents: read }
+
 jobs:
-  noop:
-    runs-on: ubuntu-latest
-    steps:
-      - run: "true"
+  test:
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@1285b95e32c783cfa40eb2ffbd6ca4cd023fb884 # v3.2.2
+    with:
+      envs: |
+        - linux: py*-test
+        - macos: py*-test
+        - windows: py*-test
+      coverage: 'codecov-oidc'

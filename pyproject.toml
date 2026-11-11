@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "zarr-fits"
+dynamic = ["version"]
+description = "Zarr-based array storage where each chunk is a FITS file"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Thomas Robitaille", email = "thomas.robitaille@gmail.com" },
+    { name = "Stuart Mumford", email = "stuart@cadair.com" },
+]
+requires-python = ">=3.12"
+dependencies = ["numpy>=1.26", "astropy>=6.0", "zarr>=3.1"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "zarr_fits/_version.py"
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-asyncio"]
+docs = ["sphinx", "myst-parser", "furo"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["zarr_fits"]
+
+[tool.pytest.ini_options]
+testpaths = ["zarr_fits"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
