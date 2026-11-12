@@ -1,4 +1,6 @@
+import json
 from math import prod
+from textwrap import dedent
 
 import numpy as np
 import pytest
@@ -9,6 +11,7 @@ from reproject import reproject_interp
 from reproject.mosaicking import reproject_and_coadd
 
 from ..array import create_array, open_array
+from ..store import index_fits_to_zarr_json
 
 # The following are tests that specifically check the zarr-FITS format
 
@@ -186,3 +189,73 @@ class TestZarrFITSStore:
 
         assert_equal(array, original_data)
         assert_equal(footprint, 1)
+
+
+def deterministic_json(d):
+    return json.dumps(d, sort_keys=True, indent=2)
+
+
+EXPECTED_ZARR_JSON_MINIMAL_2D = """
+{
+  "chunk_grid": {
+    "configuration": {
+      "chunk_shape": [
+        15,
+        20
+      ]
+    },
+    "name": "regular"
+  },
+  "chunk_key_encoding": {
+    "configuration": {
+      "directory": "tiles",
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "name": "fits",
+  },
+  "codecs": [
+    {
+      "configuration": {
+        "endian": "big"
+      },
+      "name": "bytes"
+    },
+    {
+      "configuration": {
+        "header": {
+          "WCSAXES": 2,
+          "CDELT1": 1.0,
+          "CDELT2": 1.0,
+          "CRPIX1": 0.0,
+          "CRPIX2": 0.0,
+          "CRVAL1": 0.0,
+          "CRVAL2": 0.0,
+          "LATPOLE": 90.0,
+          "MJDREF": 0.0,
+        }
+      },
+      "name": "fits_header",
+    },
+  ],
+  "data_type": 'float32',
+  "fill_value": "NaN",
+  "node_type": "array",
+  "shape": [
+    30,
+    20
+  ],
+  "zarr_format": 3
+}
+"""
+
+class TestIndexJSONConversion:
+    def test_index_to_json(self, minimal_2d_dataset):
+
+        index_header = fits.getheader(minimal_2d_dataset / "index.fits")
+
+        zarr_json = index_fits_to_zarr_json(index_header)
+
+        assert deterministic_json(json.loads(zarr_json)) == EXPECTED_ZARR_JSON_MINIMAL_2D
