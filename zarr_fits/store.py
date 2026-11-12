@@ -2,6 +2,7 @@ import io
 import json
 from typing import Any
 
+import numpy as np
 from astropy.io import fits
 from zarr.abc.buffer import Buffer
 from zarr.abc.store import ByteRequest
@@ -31,6 +32,14 @@ class ZarrFITSStore(WrapperStore):
             json_bytes = index_fits_to_zarr_json(hdul[0].header)
             return prototype.buffer.from_bytes(json_bytes)
         return await self._store.get(key, prototype, byte_range)
+
+    async def set(self, key: str, value: Buffer) -> None:
+        if key == "zarr.json":
+            hdr = zarr_json_to_index_fits(value.to_bytes())
+            bytesio = io.BytesIO()
+            fits.writeto(bytesio, data=np.zeros([0] * hdr["NAXIS"]), header=hdr)
+            value = bytesio.read()
+        await self._store.set(key, value)
 
 
 def _get_keys_sorted(key_pattern: str, hdr: fits.Header) -> dict[str, Any]:
@@ -83,3 +92,26 @@ def index_fits_to_zarr_json(hdr: fits.Header) -> bytes:
         ],
     }
     return json.dumps(zarr_json).encode("utf-8")
+
+
+def zarr_json_to_index_fits(zarr_bytes: bytes) -> fits.Header:
+    zarr: dict[str, Any] = json.loads(zarr_bytes)
+    zfnaxisn = zarr["shape"]
+    naxis = len(zfnaxisn)
+    bitpix = zarr["data_type"]
+    chunk_shape = zarr["chunk_grid"]["configuration"]["chunk_shape"]
+    zfdir = zarr["chunk_key_encoding"]["configuration"]["directory"]
+    zftoffn = zarr["chunk_key_encoding"]["configuration"]["offset"]
+    header = zarr["codecs"][0]["configuration"]
+
+    hdr = fits.Header(header)
+    hdr["NAXIS"] = naxis
+    for i, n in zip(range(naxis), range(naxis + 1, 1, -1)):
+        hdr[f"NAXIS{n}"] = 0
+        hdr[f"ZFNAXIS{n}"] = zfnaxisn[i]
+        hdr["BITPIX"] = bitpix
+        hdr[f"ZFTILE{n}"] = chunk_shape[i]
+        hdr[f"ZFTOFF{n}"] = zftoffn[i]
+        hdr["ZFDIR"] = zfdir
+
+    return hdr
